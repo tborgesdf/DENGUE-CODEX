@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura de Foto 4/4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- Header -->
+            <div class="bg-blue-600 text-white p-6 text-center">
+                <h1 class="text-2xl font-bold">📸 Captura de Foto</h1>
+                <p class="text-blue-100 mt-2">Foto 4 de 4 - Última!</p>
+                <div class="w-full bg-blue-500 rounded-full h-2 mt-3">
+                    <div class="bg-white h-2 rounded-full" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Camera Section -->
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <p class="text-gray-700 mb-2">📍 <strong>Quarta foto:</strong> Complementar</p>
+                    <p class="text-sm text-gray-500">Última foto para completar a documentação</p>
+                </div>
+
+                <!-- Video Preview -->
+                <div class="relative mb-4">
+                    <video id="video" class="w-full h-64 bg-gray-200 rounded-lg object-cover" autoplay playsinline></video>
+                    <canvas id="canvas" class="hidden"></canvas>
+                </div>
+
+                <!-- Captured Photo Preview -->
+                <div id="photoPreview" class="hidden mb-4">
+                    <img id="capturedImage" class="w-full h-64 rounded-lg object-cover" alt="Foto capturada">
+                </div>
+
+                <!-- Status Message -->
+                <div id="statusMessage" class="hidden p-3 rounded-md text-sm mb-4"></div>
+
+                <!-- Buttons -->
+                <div class="space-y-3">
+                    <button 
+                        id="captureBtn"
+                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium"
+                    >
+                        📸 Tirar Foto
+                    </button>
+                    
+                    <button 
+                        id="retakeBtn"
+                        class="hidden w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200"
+                    >
+                        🔄 Tirar Novamente
+                    </button>
+                    
+                    <button 
+                        id="finishBtn"
+                        class="hidden w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 font-medium"
+                    >
+                        ✅ Finalizar Cadastro
+                    </button>
+                </div>
+
+                <!-- Info -->
+                <div class="mt-6 text-center text-xs text-gray-500">
+                    <p>📱 Mantenha o dispositivo estável durante a captura</p>
+                    <p class="mt-1">🎉 Esta é a última foto!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let stream = null;
+        let capturedPhotoData = null;
+
+        // Inicializar câmera ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            initCamera();
+        });
+
+        async function initCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'environment', // Câmera traseira
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                showMessage('Câmera iniciada com sucesso', 'success');
+                
+            } catch (error) {
+                console.error('Erro ao acessar câmera:', error);
+                showMessage('Erro ao acessar a câmera. Verifique as permissões.', 'error');
+            }
+        }
+
+        // Capturar foto
+        document.getElementById('captureBtn').addEventListener('click', function() {
+            capturePhoto();
+        });
+
+        // Tirar novamente
+        document.getElementById('retakeBtn').addEventListener('click', function() {
+            retakePhoto();
+        });
+
+        // Finalizar cadastro
+        document.getElementById('finishBtn').addEventListener('click', function() {
+            finishRegistration();
+        });
+
+        function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+
+            // Configurar canvas com as dimensões do vídeo
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Desenhar frame atual do vídeo no canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Converter para base64
+            capturedPhotoData = canvas.toDataURL('image/jpeg', 0.8);
+
+            // Parar a câmera imediatamente após a captura
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Mostrar preview da foto
+            const capturedImage = document.getElementById('capturedImage');
+            capturedImage.src = capturedPhotoData;
+
+            // Alternar visibilidade dos elementos
+            document.getElementById('video').classList.add('hidden');
+            document.getElementById('photoPreview').classList.remove('hidden');
+            document.getElementById('captureBtn').classList.add('hidden');
+            document.getElementById('retakeBtn').classList.remove('hidden');
+            document.getElementById('finishBtn').classList.add('hidden'); // só libera após análise de qualidade
+
+            showMessage('Foto capturada! Analisando qualidade...', 'info');
+
+            // Análise de qualidade bloqueante
+            analisarQualidade(capturedPhotoData).then((qualidadeAprovada) => {
+                if (qualidadeAprovada) {
+                    showMessage('Qualidade aprovada! Finalizando cadastro...', 'success');
+                    // Iniciar análise técnica em background
+                    analisarTecnicaEmBackground(capturedPhotoData);
+                    
+                    // Aguardar 2 segundos e finalizar automaticamente
+                    setTimeout(() => {
+                        finishRegistration();
+                    }, 2000);
+                } else {
+                    showMessage('Qualidade reprovada. Tire novamente.', 'error');
+                    // Mostrar botão de tirar novamente
+                    document.getElementById('retakeBtn').classList.remove('hidden');
+                }
+            });
+        }
+
+        // Função de análise de qualidade (mock, substitua pelo real)
+        async function analisarQualidade(photoData) {
+            // Aqui você pode chamar sua API Gemini ou lógica de análise
+            // Retorne true se aprovada, false se reprovada
+            // Exemplo mock:
+            await new Promise(r => setTimeout(r, 1200));
+            return true; // ou false
+        }
+
+        // Função de análise técnica em background
+        function analisarTecnicaEmBackground(photoData) {
+            // Chame sua API Gemini ou lógica técnica aqui, mas não bloqueie o usuário
+            // Exemplo:
+            setTimeout(() => {
+                // Salve o resultado no localStorage ou envie para o backend
+                // localStorage.setItem('analiseTecnicaFoto4', 'resultado...');
+            }, 100);
+        }
+
+        function retakePhoto() {
+            // Voltar para o modo de captura
+            document.getElementById('video').classList.remove('hidden');
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+            document.getElementById('finishBtn').classList.add('hidden');
+            
+            capturedPhotoData = null;
+            showMessage('Pronto para nova captura', 'info');
+        }
+
+        async function finishRegistration() {
+            if (!capturedPhotoData) {
+                showMessage('Nenhuma foto capturada', 'error');
+                return;
+            }
+
+            const finishBtn = document.getElementById('finishBtn');
+            finishBtn.disabled = true;
+            finishBtn.innerHTML = '⏳ Finalizando cadastro...';
+
+            try {
+                // Obter localização atual
+                const position = await getCurrentPosition();
+                
+                // Recuperar dados do localStorage
+                const registrationData = JSON.parse(localStorage.getItem('registrationData') || '{}');
+                
+                // Adicionar quarta foto
+                if (!registrationData.photos) {
+                    registrationData.photos = [];
+                }
+                if (!registrationData.photo_locations) {
+                    registrationData.photo_locations = [];
+                }
+                
+                registrationData.photos[3] = capturedPhotoData;
+                registrationData.photo_locations[3] = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Enviar dados para o servidor
+                const response = await fetch(`${API_CONFIG.BASE_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(registrationData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Cadastro finalizado com sucesso!', 'success');
+                    
+                    // Limpar localStorage
+                    localStorage.removeItem('registrationData');
+                    
+                    // Parar câmera
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                    
+                    setTimeout(() => {
+                        window.location.href = 'success.html';
+                    }, 2000);
+                    
+                } else {
+                    throw new Error(result.error || 'Erro ao finalizar cadastro');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao finalizar cadastro:', error);
+                showMessage('Erro ao finalizar cadastro: ' + error.message, 'error');
+                finishBtn.disabled = false;
+                finishBtn.innerHTML = '✅ Finalizar Cadastro';
+            }
+        }
+
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocalização não suportada'));
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    resolve,
+                    reject,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            });
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('statusMessage');
+            messageDiv.textContent = message;
+            
+            let className = 'p-3 rounded-md text-sm ';
+            switch(type) {
+                case 'error':
+                    className += 'bg-red-100 text-red-700 border border-red-300';
+                    break;
+                case 'success':
+                    className += 'bg-green-100 text-green-700 border border-green-300';
+                    break;
+                case 'info':
+                    className += 'bg-blue-100 text-blue-700 border border-blue-300';
+                    break;
+                default:
+                    className += 'bg-gray-100 text-gray-700 border border-gray-300';
+            }
+            
+            messageDiv.className = className;
+            messageDiv.classList.remove('hidden');
+            
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Limpar recursos ao sair da página
+        window.addEventListener('beforeunload', function() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
+

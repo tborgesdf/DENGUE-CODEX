@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura de Foto 5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+        <div class="text-center mb-4">
+            <p class="text-gray-700 mb-2">📍 <strong>Quinta foto:</strong> Detalhamento entomológico</p>
+            <p class="text-sm text-gray-500">Capture o inseto ou larva para análise morfológica detalhada</p>
+        </div>
+        <!-- Video Preview -->
+        <div class="relative mb-4">
+            <video id="video" class="w-full h-64 bg-gray-200 rounded-lg object-cover" autoplay playsinline></video>
+            <canvas id="canvas" class="hidden"></canvas>
+        </div>
+        <!-- Captured Photo Preview -->
+        <div id="photoPreview" class="hidden mb-4">
+            <img id="capturedImage" class="w-full h-64 rounded-lg object-cover" alt="Foto capturada">
+        </div>
+        <!-- Status Message -->
+        <div id="statusMessage" class="hidden p-3 rounded-md text-sm mb-4"></div>
+        <!-- Prompt (opcional, mas será preenchido automaticamente pelo script) -->
+        <div class="mb-4">
+            <label for="promptInput" class="block text-xs text-gray-600 mb-1">Prompt para análise IA (opcional)</label>
+            <textarea id="promptInput" class="w-full border rounded p-2 text-xs" rows="2" placeholder="Prompt será preenchido automaticamente..."></textarea>
+        </div>
+        <!-- Botão de Captura -->
+        <button id="captureButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Capturar Foto</button>
+        <!-- Progresso -->
+        <div class="text-center mt-4 text-xs text-gray-500" id="progressText">Foto 5 de 5</div>
+    </div>
+    <script src="capture-photo.js"></script>
+</body>
+</html> 
